@@ -197,9 +197,13 @@ peg::parser! {
 
         // A glob metacharacter construct: wildcard, bracket expression, or extglob.
         rule glob_piece() =
-            bracket_expression() /
+            slash_free_bracket_expression() /
             extglob_enabled() extended_glob_pattern() /
             wildcard()
+
+        // A bracket expression can't contain '/', so text like `[a/b]` is not a glob.
+        rule slash_free_bracket_expression() =
+            text:$(bracket_expression()) {? if text.contains('/') { Err("slash") } else { Ok(()) } }
 
         // A non-glob piece: an escape sequence or any character not starting a glob.
         rule non_glob_piece() =
@@ -352,6 +356,10 @@ mod tests {
         assert!(!pattern_has_glob_metacharacters("]", false));
         assert!(!pattern_has_glob_metacharacters("foo]", false));
         assert!(!pattern_has_glob_metacharacters("a]b", false));
+
+        // A bracket expression can't contain '/', so `[a/b]` is plain text.
+        assert!(!pattern_has_glob_metacharacters("[a/b]", false));
+        assert!(pattern_has_glob_metacharacters("[a/b]*", false));
 
         // Lone `[` without matching `]` is NOT a glob metacharacter.
         assert!(!pattern_has_glob_metacharacters("[", false));

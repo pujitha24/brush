@@ -77,3 +77,8 @@ cases:
     stdin: |
       shopt -s nullglob
       echo "result:" nonexistent_dir/*/
+
+  - name: "nullglob keeps bracket word containing slash"
+    stdin: |
+      shopt -s nullglob
+      echo [a/b]
